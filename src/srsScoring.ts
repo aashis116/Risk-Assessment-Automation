@@ -4,25 +4,29 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function triggerVendorScore(page: Page, { baseURL, vendorName, provider = 'all' }: { baseURL: string; vendorName: string; provider?: string }): Promise<void> {
-  await page.goto(`${baseURL}/vendor-srs-list.php`);
+const RESCORE_FIELD_BY_PROVIDER: Record<string, string> = {
+  all: 'rescore',
+  upguard: 'rescore_upguard',
+  shodan: 'rescore_shodan',
+};
+
+export async function triggerVendorScore(page: Page, { provider = 'all' }: { provider?: string } = {}): Promise<void> {
+  const fieldName = RESCORE_FIELD_BY_PROVIDER[provider];
+  if (!fieldName) throw new Error(`Unknown provider: ${provider}`);
+
+  await page.locator('button[data-toggle="scoreMenu"]').click();
+  await page.locator(`button[name="${fieldName}"]`).click();
   await page.waitForLoadState('networkidle');
+}
 
-  page.once('dialog', (dialog) => dialog.accept());
-
-  await page.evaluate(
-    ({ vendorName, provider }) => {
-      const rows = Array.from(document.querySelectorAll('tr'));
-      const row = rows.find((r) => r.textContent?.includes(vendorName));
-      if (!row) throw new Error(`Vendor row not found for: ${vendorName}`);
-      const btn = row.querySelector(`button[name="rescore_provider"][value="${provider}"]`) as HTMLButtonElement | null;
-      if (!btn) throw new Error(`Score button not found for provider: ${provider}`);
-      btn.click();
-    },
-    { vendorName, provider }
-  );
-
-  await page.waitForLoadState('networkidle');
+export async function assertScoringQueued(page: Page): Promise<void> {
+  const queued = await page
+    .getByText('Scoring queued', { exact: false })
+    .isVisible()
+    .catch(() => false);
+  if (!queued) {
+    throw new Error('Score trigger did not queue a scan (no "Scoring queued" banner found) — the rescore click likely failed');
+  }
 }
 
 export async function openScorePage(page: Page, { baseURL, vendorName }: { baseURL: string; vendorName: string }): Promise<void> {
