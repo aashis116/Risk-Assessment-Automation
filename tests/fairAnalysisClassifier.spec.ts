@@ -1,8 +1,9 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { test, expect } from '@playwright/test';
 import { FAIR_TEXT_FIELDS, buildFairAnalysisPrompt, parseFairAnalysisAnswers } from '../src/fairAnalysisClassifier.js';
+import type { Vendor } from '../src/types.js';
 
-const vendor = {
+const vendor: Vendor = {
+  id: 1,
   vendor_name: 'Northwind Retail Systems',
   vendor_domain: 'shopify.com',
   current_srs_score: 756,
@@ -15,16 +16,16 @@ const vendor = {
 
 test('buildFairAnalysisPrompt includes real vendor scores and identity', () => {
   const prompt = buildFairAnalysisPrompt(vendor);
-  assert.match(prompt, /Northwind Retail Systems/);
-  assert.match(prompt, /shopify\.com/);
-  assert.match(prompt, /756/);
-  assert.match(prompt, /88/);
+  expect(prompt).toMatch(/Northwind Retail Systems/);
+  expect(prompt).toMatch(/shopify\.com/);
+  expect(prompt).toMatch(/756/);
+  expect(prompt).toMatch(/88/);
 });
 
 test('buildFairAnalysisPrompt lists every target field name', () => {
   const prompt = buildFairAnalysisPrompt(vendor);
   for (const field of FAIR_TEXT_FIELDS) {
-    assert.match(prompt, new RegExp(field.name));
+    expect(prompt).toMatch(new RegExp(field.name));
   }
 });
 
@@ -33,12 +34,12 @@ test('parseFairAnalysisAnswers returns a map with all expected fields', () => {
     Object.fromEntries(FAIR_TEXT_FIELDS.map((f) => [f.name, `sample text for ${f.name}`]))
   );
   const answers = parseFairAnalysisAnswers(raw);
-  assert.equal(answers.msa, 'sample text for msa');
-  assert.equal(answers.network_security, 'sample text for network_security');
+  expect(answers.msa).toBe('sample text for msa');
+  expect(answers.network_security).toBe('sample text for network_security');
 });
 
 test('parseFairAnalysisAnswers strips markdown code fences', () => {
   const raw = '```json\n' + JSON.stringify({ msa: 'test' }) + '\n```';
   const answers = parseFairAnalysisAnswers(raw);
-  assert.equal(answers.msa, 'test');
+  expect(answers.msa).toBe('test');
 });

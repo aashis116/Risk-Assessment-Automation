@@ -1,6 +1,8 @@
-export const FAIR_TEXT_FIELDS = [
+import type { Vendor } from './types.js';
+
+export const FAIR_TEXT_FIELDS: { name: string; description: string }[] = [
   { name: 'msa', description: 'Master Services Agreement details' },
-  { name: 'scope_of_work', description: "Description of the work performed by the vendor" },
+  { name: 'scope_of_work', description: 'Description of the work performed by the vendor' },
   { name: 'medium_of_data', description: 'Method of data transfer (cloud, on-premises, etc.)' },
   { name: 'certifications', description: "Vendor's security certifications" },
   { name: 'compliance', description: "Vendor's compliance with relevant regulations" },
@@ -28,7 +30,7 @@ export const FAIR_TEXT_FIELDS = [
   { name: 'third_party_compliance_questionnaire', description: 'Compliance questionnaire status for subprocessors' },
 ];
 
-export function buildFairAnalysisPrompt(vendor) {
+export function buildFairAnalysisPrompt(vendor: Vendor): string {
   const fieldLines = FAIR_TEXT_FIELDS.map((f) => `- ${f.name}: ${f.description}`).join('\n');
 
   return `You are a third-party risk analyst writing a FAIR (Factor Analysis of Information Risk) assessment for a vendor, based on real external security scan data.
@@ -46,12 +48,12 @@ ${fieldLines}
 Respond with ONLY a JSON object mapping each field name to its text content.`;
 }
 
-export function parseFairAnalysisAnswers(raw) {
+export function parseFairAnalysisAnswers(raw: string): Record<string, string> {
   const cleaned = raw.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
 
   try {
     return JSON.parse(cleaned);
   } catch (err) {
-    throw new Error(`Failed to parse FAIR analysis answers: ${err.message}`);
+    throw new Error(`Failed to parse FAIR analysis answers: ${(err as Error).message}`);
   }
 }
