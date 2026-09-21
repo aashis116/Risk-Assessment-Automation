@@ -19,8 +19,9 @@ export async function runSrsScoring(page: Page, { vendorName, vendorId, provider
   await assertScoringQueued(page);
 
   console.log('Waiting for the score to update on the page...');
-  const scores = await waitForScoreOnPage(page, { provider });
+  const scores = await waitForScoreOnPage(page);
 
-  console.log(`Scored: SRS=${scores.current_srs_score}, Shodan=${scores.current_shodan_score}`);
-  return { id: vendorId, vendor_name: vendorName, vendor_domain: '', ...scores };
+  console.log(`Scored: SRS=${scores.current_srs_score}, Shodan=${scores.current_shodan_score} (result banner: "${scores.resultBanner}")`);
+  const { resultBanner, ...scoreFields } = scores;
+  return { id: vendorId, vendor_name: vendorName, vendor_domain: '', ...scoreFields };
 }

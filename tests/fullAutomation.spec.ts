@@ -10,7 +10,7 @@ test('full vendor onboarding through ticket pipeline', async ({ page }) => {
 
   const stamp = Date.now();
   const vendor_name = `Acme QA Tools ${stamp}`;
-  const vendor_domain = 'app.clokio.io';
+  const vendor_domain = 'clokio-stage.up.railway.app';
 
   const onboarding = await test.step('Onboarding', () => runOnboarding(page, { vendor_name, vendor_domain }));
 

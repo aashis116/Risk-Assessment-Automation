@@ -78,32 +78,41 @@ function parsePercent(value: string | null | undefined): number | null {
 
 export async function waitForScoreOnPage(
   page: Page,
-  { provider = 'all', timeoutMs = 300000, intervalMs = 10000 }: { provider?: string; timeoutMs?: number; intervalMs?: number } = {}
-): Promise<{ current_srs_score: number | null; srs_grade: string | null; current_shodan_score: number | null; shodan_grade: string | null }> {
-  const watchUpguard = provider === 'all' || provider === 'upguard';
-  const watchShodan = provider === 'all' || provider === 'shodan';
-
-  const baseline = await readScoreCards(page);
+  { timeoutMs = 720000, pollIntervalMs = 3000 }: { timeoutMs?: number; pollIntervalMs?: number } = {}
+): Promise<{ current_srs_score: number | null; srs_grade: string | null; current_shodan_score: number | null; shodan_grade: string | null; resultBanner: string }> {
+  // The site's own page JS polls api-rescore-status.php every 3s and navigates itself
+  // (window.location.href) once the background job finishes, landing on a page that shows
+  // a one-time flash result banner, e.g. "UpGuard: 908 (A) | Shodan: 82 (B)" (.alert-success),
+  // or "UpGuard: 506 (F) | ERRORS: Shodan: Could not resolve domain: ..." (.alert-danger) when
+  // one provider errors (invalid/unresolvable domain) but another still produced a real score.
+  // We treat "at least one provider produced a score" as success regardless of banner color —
+  // the color reflects whether ANY provider errored, not whether the run was useless to us.
   const start = Date.now();
+  const resultBanner = page.locator('.alert-success, .alert-warning, .alert-danger');
 
   while (Date.now() - start < timeoutMs) {
-    const cards = await readScoreCards(page);
-    const upguardDone = !watchUpguard || Boolean(cards.upguard?.date && cards.upguard.date !== baseline.upguard?.date);
-    const shodanDone = !watchShodan || Boolean(cards.shodan?.date && cards.shodan.date !== baseline.shodan?.date);
+    if (await resultBanner.isVisible().catch(() => false)) {
+      const text = (await resultBanner.innerText()).trim();
 
-    if (upguardDone && shodanDone) {
+      // The banner renders as soon as the post-scoring page starts loading; give the rest
+      // of the page (score cards further down) a moment to finish rendering before reading them.
+      await page.waitForLoadState('networkidle');
+
+      const cards = await readScoreCards(page);
+      if (!cards.upguard && !cards.shodan) {
+        throw new Error(`Scoring failed for every provider: "${text}"`);
+      }
       return {
         current_srs_score: parsePercent(cards.upguard?.value),
         srs_grade: cards.upguard?.grade ?? null,
         current_shodan_score: parsePercent(cards.shodan?.value),
         shodan_grade: cards.shodan?.grade ?? null,
+        resultBanner: text,
       };
     }
 
-    await delay(intervalMs);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await delay(pollIntervalMs);
   }
 
-  throw new Error('Timed out waiting for score to update on the vendor score page');
+  throw new Error('Timed out waiting for the score result banner on the vendor score page');
 }
