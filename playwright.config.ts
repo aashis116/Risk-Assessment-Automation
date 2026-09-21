@@ -9,7 +9,6 @@ export default defineConfig({
   testDir: 'tests',
   timeout: 120000,
   fullyParallel: false,
-  grepInvert: /@live/,
   use: {
     headless: process.env.ONBOARDING_HEADLESS === 'true',
     viewport: process.env.ONBOARDING_HEADLESS === 'true' ? undefined : null,

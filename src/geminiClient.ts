@@ -1,10 +1,10 @@
 const DEFAULT_MODEL = 'gemini-3.6-flash';
 
-export function buildGeminiUrl(apiKey, model = DEFAULT_MODEL) {
+export function buildGeminiUrl(apiKey: string, model: string = DEFAULT_MODEL): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 }
 
-export function buildGeminiRequestBody(prompt) {
+export function buildGeminiRequestBody(prompt: string): { contents: { parts: { text: string }[] }[] } {
   return {
     contents: [{ parts: [{ text: prompt }] }],
   };
@@ -12,7 +12,7 @@ export function buildGeminiRequestBody(prompt) {
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 
-function delay(ms) {
+function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -23,7 +23,14 @@ export async function callGemini({
   fetchImpl = fetch,
   maxRetries = 3,
   retryDelayMs = 1000,
-}) {
+}: {
+  apiKey: string;
+  prompt: string;
+  model?: string;
+  fetchImpl?: typeof fetch;
+  maxRetries?: number;
+  retryDelayMs?: number;
+}): Promise<string> {
   let attempt = 0;
 
   while (true) {

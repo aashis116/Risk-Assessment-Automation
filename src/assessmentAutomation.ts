@@ -1,16 +1,18 @@
-const TEMPLATE_IDS = {
+import type { Page } from '@playwright/test';
+
+const TEMPLATE_IDS: Record<string, string> = {
   'AI Usage': '4',
   'ISO 27001:2022 Assessment': '1',
   'Tier 2 Vendor Assessment': '2',
 };
 
-export async function createAssessment(page, { baseURL, templateName, vendorSearchText }) {
+export async function createAssessment(page: Page, { baseURL, templateName, vendorSearchText }: { baseURL: string; templateName: string; vendorSearchText: string }): Promise<string> {
   await page.goto(`${baseURL}/vendor-assessments.php`);
   await page.getByRole('button', { name: '+ New Assessment' }).click();
 
   const templateId = TEMPLATE_IDS[templateName];
   await page.evaluate((id) => {
-    const el = document.querySelector('select[name="template_id"]');
+    const el = document.querySelector('select[name="template_id"]') as HTMLSelectElement;
     el.value = id;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }, templateId);
@@ -22,10 +24,10 @@ export async function createAssessment(page, { baseURL, templateName, vendorSear
   await page.waitForLoadState('networkidle');
 
   const tokenUrl = await page.locator('code').textContent();
-  return tokenUrl.trim();
+  return (tokenUrl ?? '').trim();
 }
 
-export async function uploadCertificate(page, {
+export async function uploadCertificate(page: Page, {
   assessmentUrl,
   certificatePath,
   expiryDate,
@@ -34,7 +36,16 @@ export async function uploadCertificate(page, {
   submitterEmail,
   countryName,
   phoneNumber,
-}) {
+}: {
+  assessmentUrl: string;
+  certificatePath: string;
+  expiryDate?: string;
+  submitterName: string;
+  submitterTitle: string;
+  submitterEmail: string;
+  countryName: string;
+  phoneNumber: string;
+}): Promise<void> {
   await page.goto(assessmentUrl);
   await page.getByRole('button', { name: 'Yes, Upload Certificate' }).click();
 

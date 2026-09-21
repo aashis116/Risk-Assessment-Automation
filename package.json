@@ -4,8 +4,7 @@
   "description": "Playwright-driven TPRM automation: onboards/assesses vendors visually, then polls for risk changes and files GitHub tickets",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
-    "test:live": "playwright test --grep @live"
+    "test": "playwright test"
   },
   "keywords": [],
   "author": "",

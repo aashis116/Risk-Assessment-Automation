@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
+import type { Vendor, CreatedIssue, Classification } from './types.js';
 
-export function buildAlertEmail(vendor, issue, classification) {
+export function buildAlertEmail(vendor: Vendor, issue: CreatedIssue, classification: Classification): { subject: string; text: string } {
   const subject = `[${classification.severity.toUpperCase()}] Risk alert for ${vendor.vendor_name}`;
 
   const text = `${classification.summary}
@@ -15,7 +16,14 @@ Full ticket: ${issue.html_url}`;
   return { subject, text };
 }
 
-export async function sendAlertEmail({ user, appPassword, to, vendor, issue, classification }) {
+export async function sendAlertEmail({ user, appPassword, to, vendor, issue, classification }: {
+  user: string;
+  appPassword: string;
+  to: string;
+  vendor: Vendor;
+  issue: CreatedIssue;
+  classification: Classification;
+}): Promise<unknown> {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user, pass: appPassword },

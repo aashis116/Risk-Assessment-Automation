@@ -1,4 +1,6 @@
-export function buildSectionPrompt(vendorContext, questions) {
+import type { Question, VendorContext } from './types.js';
+
+export function buildSectionPrompt(vendorContext: VendorContext, questions: Question[]): string {
   const questionLines = questions
     .map((q) => {
       const opts = q.options ? ` (choose one of: ${q.options.join(', ')})` : '';
@@ -22,18 +24,18 @@ ${questionLines}
 Respond with ONLY a JSON object mapping each question id to its answer, e.g. {"17": 500, "21": "Yes"}.`;
 }
 
-export function parseSectionAnswers(raw, questions) {
+export function parseSectionAnswers(raw: string, questions: Question[]): Record<string, string | number> {
   const cleaned = raw.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
 
-  let parsed;
+  let parsed: Record<string, string | number>;
   try {
     parsed = JSON.parse(cleaned);
   } catch (err) {
-    throw new Error(`Failed to parse section answers: ${err.message}`);
+    throw new Error(`Failed to parse section answers: ${(err as Error).message}`);
   }
 
   for (const q of questions) {
-    if (q.type === 'radio' && q.id in parsed && !q.options.includes(parsed[q.id])) {
+    if (q.type === 'radio' && q.id in parsed && q.options && !q.options.includes(String(parsed[q.id]))) {
       throw new Error(`invalid value for question ${q.id}: "${parsed[q.id]}" not in [${q.options.join(', ')}]`);
     }
   }
