@@ -5,3 +5,5 @@ data/*.db
 test-results/
 playwright-report/
 .playwright-mcp/
+allure-results/
+allure-report/
